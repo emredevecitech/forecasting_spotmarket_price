@@ -21,7 +21,7 @@ try:
     st.success("✅ TensorFlow available - LSTM model enabled")
 except Exception as e:
     TENSORFLOW_AVAILABLE = False
-    st.warning(f"⚠️ TensorFlow not available: {str(e)[:100]}... LSTM model will be disabled.")
+    st.warning(f"⚠️ TensorFlow not available: {str(e)[:50]}... LSTM model will be disabled.")
 
 try:
     from statsmodels.tsa.arima.model import ARIMA
@@ -30,7 +30,7 @@ try:
     st.success("✅ Statsmodels available - ARIMA model enabled")
 except ImportError as e:
     STATSMODELS_AVAILABLE = False
-    st.warning(f"⚠️ Statsmodels not available: {str(e)}. ARIMA model will be disabled.")
+    st.warning(f"⚠️ Statsmodels not available: {str(e)[:50]}. ARIMA model will be disabled.")
 
 try:
     from prophet import Prophet
@@ -38,7 +38,7 @@ try:
     st.success("✅ Prophet available - Prophet model enabled")
 except ImportError as e:
     PROPHET_AVAILABLE = False
-    st.warning(f"⚠️ Prophet not available: {str(e)}. Prophet model will be disabled.")
+    st.warning(f"⚠️ Prophet not available: {str(e)[:50]}. Prophet model will be disabled.")
 
 # Set page configuration
 st.set_page_config(
