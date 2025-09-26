@@ -136,14 +136,39 @@ def load_data():
         # Remove unrealistic values (likely data errors)
         df = df[df['Total_Wind'] >= 0]  # Wind can't be negative
         df = df[df['Total_Solar'] >= 0]  # Solar can't be negative  
-        df = df[df['Price_MWh'] >= 0]   # Price can't be negative
+        df = df[df['Price_MWh'] >= -50]   # Allow some negative prices (market conditions)
         df = df[df['Price_MWh'] <= 1000]  # Remove extreme price outliers
         df = df[df['Total_Wind'] <= 50000]  # Remove extreme wind outliers
         df = df[df['Total_Solar'] <= 50000]  # Remove extreme solar outliers
         
+        # Additional cleaning for corrupted data
+        # Remove rows where wind is suspiciously low (likely data errors)
+        df = df[df['Total_Wind'] >= 10]  # Minimum realistic wind generation
+        
+        # Remove rows with extreme outliers (more than 3 standard deviations from mean)
+        for col in ['Total_Wind', 'Total_Solar', 'Price_MWh']:
+            if col in df.columns:
+                mean_val = df[col].mean()
+                std_val = df[col].std()
+                if std_val > 0:  # Only if std is positive
+                    df = df[df[col] >= mean_val - 3 * std_val]
+                    df = df[df[col] <= mean_val + 3 * std_val]
+        
         cleaned_rows = len(df)
         if initial_rows != cleaned_rows:
             st.info(f"🧹 Cleaned data: Removed {initial_rows - cleaned_rows:,} rows with unrealistic values")
+        
+        # Check for data quality issues
+        if len(df) > 0:
+            wind_mean = df['Total_Wind'].mean()
+            if wind_mean < 100:  # Suspiciously low wind average
+                st.warning(f"⚠️ **Data Quality Warning**: Wind generation average is unusually low ({wind_mean:.1f} MW). This may indicate data quality issues.")
+            
+            # Check for recent data quality
+            recent_data = df.tail(100)
+            recent_wind_mean = recent_data['Total_Wind'].mean()
+            if recent_wind_mean < 50:
+                st.error(f"🚨 **Critical Data Issue**: Recent wind data appears corrupted (avg: {recent_wind_mean:.1f} MW). Consider using historical data periods.")
         
         # Extract additional time-based features if not already present
         if 'Hour' not in df.columns:
@@ -716,7 +741,7 @@ st.sidebar.header("📅 Time Period Selection")
 preset_option = st.sidebar.selectbox(
     "Quick Select:",
     ["Custom Range", "Last 7 Days", "Last 30 Days", "Last 90 Days", 
-     "Last Year", "Full Dataset", "2024 Data", "2023 Data"]
+     "Last Year", "2024 Data", "2023 Data", "2022 Data", "Full Dataset"]
 )
 
 # Calculate date ranges based on preset
@@ -744,6 +769,9 @@ elif preset_option == "2024 Data":
 elif preset_option == "2023 Data":
     start_date = datetime(2023, 1, 1)
     end_date = datetime(2023, 12, 31, 23)
+elif preset_option == "2022 Data":
+    start_date = datetime(2022, 1, 1)
+    end_date = datetime(2022, 12, 31, 23)
 else:  # Custom Range
     start_date = st.sidebar.date_input(
         "Start Date:",
